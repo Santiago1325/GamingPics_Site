@@ -6,6 +6,8 @@ const user = require('../models/user');
 let User = require('../models/user');
 let jwt = require('../services/jwt');
 let mongoosePaginate = require('mongoose-pagination');
+let path = require('path');
+let fs = require('fs');
 
 function home(req, res){
     res.status(200).send(
@@ -57,12 +59,12 @@ function saveUser(req, res){
                                     });
                                 }
                                 if(userStored){
-                                    res.status(200).send({
+                                    return res.status(200).send({
                                         message: "Usuario almacenado",
                                         user: userStored
                                     })
                                 }else{
-                                    res.status(404).send({
+                                    return res.status(404).send({
                                         message: "El usuario no fue almacenado"
                                     })
                                 }
@@ -193,7 +195,56 @@ function updateUser(req, res){
 
 }
 
+function updateImage(req, res){
+    let userId = req.params.id;
+    
+    if(userId != req.user.sub){
+        return res.status(500).send({
+            message: "El usuario no tiene permisos"
+        })
+    }
 
+    if(req.files){
+        let file_path = req.files.image.path;
+        let file_split = file_path.split('\\')
+        console.log(file_split)
+        let file_name = file_split[2];
+        let file_ext = file_name.split('\.')[1];
+        console.log(file_ext)
+
+        if(file_ext == "png" | file_ext == "jpg" | file_ext == "gif" | file_ext == "svg"){
+            User.findByIdAndUpdate(userId, {image: file_name}, {new:true}, (err, userUpdate) =>{
+                if(err){
+                    return res.status(500).send({
+                        message: "Error al actualizar"
+                    })
+                }
+
+                if(!userUpdate){
+                    return res.status(200).send({
+                        message: "No se encontro el usuario"
+                    })
+                }
+
+                return res.status(200).send({
+                    message: "La imagen fue actualizada", userUpdate
+                })
+            })
+
+
+        }else{
+            fs.unlink(file_path, () => {
+                return res.status(200).send({
+                    message: "Extension del archivo no es correcta"
+                })
+            })
+        }
+    }else{
+        res.status(200).send({
+            message:"No hay archivos"
+        })
+    }
+}
 
 module.exports = {
     home,
@@ -202,5 +253,6 @@ module.exports = {
     loginUsers,
     getUser,
     getUsers,
-    updateUser
+    updateUser,
+    updateImage
 }

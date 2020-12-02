@@ -9,6 +9,7 @@ let PublicationSchema = Schema({
     created_at: String,
     game: String,
     user: {type: Schema.ObjectId, ref: 'User'},
+    tag: {type: Schema.ObjectId, ref: 'Tag'},
 })
 
 module.exports = mongoose.model("Publication", PublicationSchema);
